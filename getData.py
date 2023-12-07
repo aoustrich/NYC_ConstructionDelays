@@ -12,4 +12,5 @@ df = pd.read_json(r.text)
 
 df = df.drop_duplicates(subset = ['project_id','seq_number'],keep='last').reset_index(drop=True)
 # print(df.shape)
+df.dropna(axis = 0, subset=['orig_start_date','orig_end_date','task_start_date','task_end_date'],inplace=True)
 df.to_csv("data/nycMilestones.csv",index=False) 
