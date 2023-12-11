@@ -106,6 +106,16 @@ projectCosts = projectCosts.merge(projectStarts[['project_id','startStatus']],
                                     how='inner')
 projectCosts['city_pct'] = projectCosts['city_plan_total'] / projectCosts['total_cost']
 projectCosts['noncity_pct'] = projectCosts['noncity_plan_total'] / projectCosts['total_cost']
+projectCosts['funded_by'] = np.select([
+                                    (projectCosts['noncity_pct'] == 1.0) ,
+                                    ( (projectCosts['city_pct']<1.0) & (projectCosts['noncity_pct']>0))  # Condition for "Non-City"
+                                ],
+                                [
+                                    'Non City',
+                                    'Both'
+                                ],
+                                default='City'  # Default value if none of the conditions are met
+                            )  
 projectCosts['majority_funder'] = np.select([
                                     (projectCosts['city_pct'] <= .5)   # Condition for "Non-City"
                                 ],
@@ -114,6 +124,7 @@ projectCosts['majority_funder'] = np.select([
                                 ],
                                 default='city'  # Default value if none of the conditions are met
                             )  
+
 projectCosts["budget_usage"]=np.select([
                             ( projectCosts['costStatus'] == "On Target"),  # Condition for a non 0 budget
                             (projectCosts['orig_bud_amt'] == 0)
