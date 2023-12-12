@@ -1,4 +1,4 @@
-End Status,Early,On Time,Late
-Early,529,115,57
-On Time,46,6203,29
-Late,84,385,1518
+End Status,Late,On Time,Early
+Early,57,115,529
+On Time,29,6203,46
+Late,1518,385,84

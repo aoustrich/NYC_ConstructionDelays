@@ -82,7 +82,7 @@ projectCosts = costs.groupby('project_id').agg({'boro':'first',
                                  'managing_agcy': 'first',
                                  'orig_bud_amt': 'first', 
                                  'city_plan_total': 'max', 
-                                 'noncity_plan_total': 'sum',
+                                 'noncity_plan_total': 'max',
                                  'starting_delta': 'first',
                                  'ending_delta': 'first'}).reset_index()
 
