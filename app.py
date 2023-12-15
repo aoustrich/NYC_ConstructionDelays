@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import streamlit as st
 import plotly.express as px
+import plotly.graph_objects as go
 
 # --------- Load Data ---------
 projectCosts = pd.read_csv('data/projectCosts.csv')
@@ -17,7 +18,6 @@ boroNames = projectCosts.boro.unique().tolist()
 st.set_page_config(page_title="Explore NYC Construction Delays and Costs")
 
 st.sidebar.header("About",divider="red")
-
 st.sidebar.markdown("""
                 This dashboard is part of my final project for my STAT 386 class at BYU.
                 The goal of the project was to see look at construction projects to see if 
@@ -25,9 +25,6 @@ st.sidebar.markdown("""
                 later than planned and went over budget). The data used in this project was 
                 collected from the [NYC Open Data Portal](https://data.cityofnewyork.us/).
                 """)
-
-
-st.sidebar.markdown("---")
 
 st.sidebar.header("Helpful Links",divider="red")
 st.sidebar.markdown(
@@ -38,7 +35,6 @@ st.sidebar.markdown(
         """
     )
 
-st.sidebar.markdown("---")
 st.sidebar.header("About Me",divider="red")
 st.sidebar.info("Check out my [website](https://aoustrich.github.io/) to learn more about me and see other projects!", icon="ℹ️")
 
@@ -52,6 +48,7 @@ st.header("Compare Project Budget and Timeline Statuses Across Multiple Boroughs
 
 filtered_boros = st.multiselect('What Boroughs do you want to see?',boroNames,
                                  default=boroNames)
+
 df_filtered_boros = projectCosts[projectCosts['boro'].isin(filtered_boros)]
 
 def createBorosBudgetStatusBar():
@@ -106,23 +103,44 @@ def createBorosEndStatusBar():
     return fig
 
 
+
+
+# # Create a boolean variable for each expander to control their states
+expander1_expanded = False
+expander2_expanded = False
+expander3_expanded = False
+
 plot1 = createBorosBudgetStatusBar()
 plot2 = createBorosStartStatusBar()
-plot2 = createBorosEndStatusBar()
+plot3 = createBorosEndStatusBar()
 
 #  if i'm using streamlit expanders how can I make it so when one is expanded all others collapse? 
 
-st.write("Click on the expanders below to see the different plots.")
+st.info('Click on the expanders below to see the different plots', icon="ℹ️")
 
-with st.expander("Project Budget Status Across Boroughs"):
+with st.expander("Project Budget Status Across Boroughs", expanded=expander1_expanded):
     st.plotly_chart(plot1)
 
-with st.expander("Project Start Status Across Boroughs"):
+    # When expander 1 is expanded, collapse the other expanders
+    # if st.expander.expanded:
+    #     expander2_expanded = False
+    #     expander3_expanded = False
+
+with st.expander("Project Start Status Across Boroughs", expanded=expander2_expanded):
     st.plotly_chart(plot2)
 
-with st.expander("Project End Status Across Boroughs"):
-    st.plotly_chart(plot2)
+    # When expander 2 is expanded, collapse the other expanders
+    # if st.expander.expanded:
+    #     expander1_expanded = False
+    #     expander3_expanded = False
 
+with st.expander("Project End Status Across Boroughs", expanded=expander3_expanded):
+    st.plotly_chart(plot3)
+
+    # # When expander 3 is expanded, collapse the other expanders
+    # if st.expander.expanded:
+    #     expander1_expanded = False
+    #     expander2_expanded = False
 
 ##############################################################################
 #                        --------- Part 2 ---------                          #
@@ -173,15 +191,27 @@ if stageBoro1 is not None and stageBoro2 is not None and projectStage_xAxis_Sele
                     x=projectStage_xAxis, 
                     color='boro', 
                     barmode='stack', 
-                    nbins=200, 
-                    title=f"Comparing {stageBoro1} & {stageBoro2} {projectStageTitle}s")
+                    nbins=250, 
+                    title=f"Comparing {stageBoro1} & {stageBoro2} {projectStageTitle}s"
+                    # hover_data =  "<b>Borough</b>: %{boro}<br><b>Ending Delta</b>: %{ending_delta}<br><extra></extra>" # Count<b></b>: %{count}
+                )
         fig.update_layout(xaxis=dict(range=[-250, 250]),
                         legend_title='Borough',
                         height=500,
                         width=500,
                         xaxis_title= projectStageTitle,
-                        yaxis_title='Count'
+                        yaxis_title='Count',
+                        hoverlabel_align='left'
                     )
+        if projectStage_xAxis_Selector == 'Start':
+            fig.update_traces(customdata = projectStageDF['boro'],
+                        hovertemplate="<b>Borough</b>: %{customdata}<br><b>Starting Delta</b>: %{x}<br><b>Count</b>: %{y}<extra></extra>"
+                )
+        else:
+            fig.update_traces(customdata = projectStageDF['boro'],
+                        hovertemplate="<b>Borough</b>: %{customdata}<br><b>Ending Delta</b>: %{x}<br><b>Count</b>: %{y}<extra></extra>"
+                )
+        
         return fig
 
 
@@ -208,7 +238,10 @@ with hMapCol2:
                                                options = ["Start","End"],
                                                index = None)
     
-
+def df_to_plotly(df):
+    return {'z': df.values.tolist(),
+            'x': df.columns.tolist(),
+            'y': df.index.tolist()}
 
 if hMapBoro is not None and hMap_yAxis_Selector is not None:
     if hMap_yAxis_Selector == 'Start':
@@ -224,28 +257,52 @@ if hMapBoro is not None and hMap_yAxis_Selector is not None:
                                       index=["Under Budget", "On Target", "Over Budget"]).T
 
     def generateBoroHeatMap():
-        fig = px.imshow(deltasHeatMapDF,
-                        labels=dict(x="Budget Status", y=hMapTitle), 
-                        x=budgetStageHMapDF.columns,
-                        y=budgetStageHMapDF.index,
-                        color_continuous_scale="deep",
-                        title=f"Project {hMapTitle} and Budget Heatmap for {hMapBoro}",
-                        text_auto=True
-                        )
-        
         if hMapTitle == 'Start Status':
-            fig.update_traces(hovertemplate="Budget Status: %{y}<br>Start Status: %{x}<br>Count: %{z}")
+            htemplate = "<b>Budget Status</b>: %{y}<br><b>Start Status</b>: %{x}<br><b>Count</b>: %{z}<extra></extra>"
         else:
-            fig.update_traces(hovertemplate="Budget Status: %{y}<br>End Status: %{x}<br>Count: %{z}")
+            htemplate ="<b>Budget Status</b>: %{y}<br><b>End Status</b>: %{x}<br><b>Count</b>: %{z}<extra></extra>"
         
-        fig.update_layout(
-                        xaxis_title='Budget Status',
-                        yaxis_title=hMapTitle,
-                        height=500,
-                        width=500,
-                        coloraxis_showscale=False
-                    )
+        fig = go.Figure(data=go.Heatmap(df_to_plotly(budgetStageHMapDF),
+                                        hovertemplate=htemplate),
+                        layout=go.Layout(
+                            title=f"Project {hMapTitle} and Budget Heatmap for {hMapBoro}",
+                            xaxis_title='Budget Status',
+                            yaxis_title=hMapTitle,
+                            height=500,
+                            width=500,
+                            coloraxis_showscale=False
+                        )
+            )   
+        
+        fig.update_layout(hoverlabel_align ='left')
+
         return fig
+
+    # def generateBoroHeatMap():
+    #     fig = px.imshow(budgetStageHMapDF,
+    #                     labels=dict(x="Budget Status", y=hMapTitle), 
+    #                     x=budgetStageHMapDF.columns,
+    #                     y=budgetStageHMapDF.index,
+    #                     color_continuous_scale="deep",
+    #                     title=f"Project {hMapTitle} and Budget Heatmap for {hMapBoro}",
+    #                     text_auto=True,
+    #                     hovertemplate="Budget Status: %{y}<br>Start Status: %{x}<br>Count: %{z}"
+    #                     )
+        
+    #     # if hMapTitle == 'Start Status':
+    #     #     fig.update_traces(hovertemplate="Budget Status: %{y}<br>Start Status: %{x}<br>Count: %{z}")
+    #     # else:
+    #     #     fig.update_traces(hovertemplate="Budget Status: %{y}<br>End Status: %{x}<br>Count: %{z}")
+        
+    #     fig.update_layout(
+    #                     xaxis_title='Budget Status',
+    #                     yaxis_title=hMapTitle,
+    #                     height=500,
+    #                     width=500,
+    #                     coloraxis_showscale=False,
+    #                     hoverlabel_align='right'
+    #                 )
+    #     return fig
     
     st.plotly_chart(generateBoroHeatMap())
 
