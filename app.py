@@ -22,8 +22,9 @@ st.sidebar.markdown("""
                 This dashboard is part of my final project for my STAT 386 class at BYU.
                 The goal of the project was to see look at construction projects to see if 
                 project proposals over promise and under deliver (i.e. projects were finished 
-                later than planned and went over budget). The data used in this project was 
-                collected from the [NYC Open Data Portal](https://data.cityofnewyork.us/).
+                later than planned and went over budget). 
+                
+                The data used in this project was collected from the [NYC Open Data Portal](https://data.cityofnewyork.us/).
                 """)
 
 st.sidebar.header("Helpful Links",divider="red")
