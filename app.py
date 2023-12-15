@@ -46,18 +46,31 @@ st.sidebar.info("Check out my [website](https://aoustrich.github.io/) to learn m
 # st.markdown("## Compare Project Budget and Timeline Statuses Across Multiple Boroughs")
 st.header("Compare Project Budget and Timeline Statuses Across Multiple Boroughs",divider="green")
 
-filtered_boros = st.multiselect('What Boroughs do you want to see?',boroNames,
-                                 default=boroNames)
+def format_option_display(option):
+    return option.title()
+
+
+filtered_boros = st.multiselect('What Boroughs do you want to see?',
+                                options=boroNames,
+                                format_func=format_option_display,
+                                default=boroNames
+                                )
+
 
 df_filtered_boros = projectCosts[projectCosts['boro'].isin(filtered_boros)]
 
+
 def createBorosBudgetStatusBar():
-    fig = px.bar(df_filtered_boros,
-             x='boro',
+    data = df_filtered_boros.groupby(['boro', 'costStatus']).size().reset_index().rename(columns={0:'numProjects'})
+    data['formatted_boro'] = data['boro'].apply(lambda x: x.title())
+    fig = px.bar(data,
+             x='formatted_boro',
+             y='numProjects',
              color='costStatus',
              barmode='group',
              category_orders={'costStatus': ["Under Budget","On Target","Over Budget"]},
-             title='Budget Status Across Boroughs'
+             title='Budget Status Across Boroughs',
+             hover_data={'formatted_boro': True, 'costStatus': True, 'numProjects': True}
             )
     fig.update_layout(
         xaxis=dict(title='Borough'),
@@ -66,11 +79,18 @@ def createBorosBudgetStatusBar():
         height=500,
         width=500
         )
+    fig.update_traces(
+                    customdata=data['costStatus'],
+                    hovertemplate="<b>Borough</b>: %{x}<br><b>Budget Status</b>: %{customdata}<br><b>Count</b>: %{y}<extra></extra>"
+            )
     return fig
 
 def createBorosStartStatusBar():
-    fig = px.bar(df_filtered_boros,
-             x='boro',
+    data = df_filtered_boros.groupby(['boro', 'startStatus']).size().reset_index().rename(columns={0:'numProjects'})
+    data['formatted_boro'] = data['boro'].apply(lambda x: x.title())
+    fig = px.bar(data,
+             x='formatted_boro',
+             y='numProjects',
              color='startStatus',
              barmode='group',
              category_orders={'startStatus': ["Early","On Time","Late"]},
@@ -83,11 +103,19 @@ def createBorosStartStatusBar():
         height=500,
         width=500
         )
+    fig.update_traces(
+                    customdata=data['startStatus'],
+                    hovertemplate="<b>Borough</b>: %{x}<br><b>Start Status</b>: %{customdata}<br><b>Count</b>: %{y}<extra></extra>"
+        
+    )
     return fig
 
 def createBorosEndStatusBar():
-    fig = px.bar(df_filtered_boros,
-             x='boro',
+    data = df_filtered_boros.groupby(['boro', 'endStatus']).size().reset_index().rename(columns={0:'numProjects'})
+    data['formatted_boro'] = data['boro'].apply(lambda x: x.title())
+    fig = px.bar(data,
+             x='formatted_boro',
+             y='numProjects',
              color='endStatus',
              barmode='group',
              category_orders={'endStatus': ["Early","On Time","Late"]},
@@ -100,9 +128,11 @@ def createBorosEndStatusBar():
         height=500,
         width=500
         )
+    fig.update_traces(
+                    customdata=data['endStatus'],
+                    hovertemplate="<b>Borough</b>: %{x}<br><b>End Status</b>: %{customdata}<br><b>Count</b>: %{y}<extra></extra>"
+    )
     return fig
-
-
 
 
 # # Create a boolean variable for each expander to control their states
